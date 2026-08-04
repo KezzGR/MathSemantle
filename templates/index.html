@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MathSemantle</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='images/icon.png') }}"
+    />
+  </head>
+  <body>
+    <div>
+      <h1>Угадай математическое слово</h1>
+      <div>
+        <input
+          id="userInput"
+          type="text"
+          placeholder="Введите слово..."
+          autofocus
+        />
+        <button id="sendButton" type="submit">Отправить</button>
+      </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>
