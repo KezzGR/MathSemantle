@@ -1,5 +1,6 @@
 let userInput = document.getElementById("userInput");
 let sendButton = document.getElementById("sendButton");
+let userWord = document.getElementById("userWord");
 
 userInput.addEventListener("keydown", function (event) {
   if (event.key == "Enter") {
@@ -18,6 +19,7 @@ function send() {
   })
     .then((response) => response.json())
     .then((data) => {
+      userWord.textContent = "Введенное пользователем слово: " + word;
       userInput.value = "";
       userInput.focus();
     })

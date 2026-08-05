@@ -12,6 +12,10 @@
   <body>
     <div>
       <h1>Угадай математическое слово</h1>
+      <p>
+        Привет! Я загадал какой-то термин из математики. Он может быть каким
+        угодно. Твоя задача - отгадать его и отправить мне, а я тебя поздравлю.
+      </p>
       <div>
         <input
           id="userInput"
@@ -20,6 +24,7 @@
           autofocus
         />
         <button id="sendButton" type="submit">Отправить</button>
+        <p id="userWord"></p>
       </div>
     </div>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
