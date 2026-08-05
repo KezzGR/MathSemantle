@@ -1,6 +1,7 @@
-let userInput = document.getElementById("userInput");
-let sendButton = document.getElementById("sendButton");
-let userWord = document.getElementById("userWord");
+const userInput = document.getElementById("userInput");
+const sendButton = document.getElementById("sendButton");
+const userWords = document.getElementById("userWords");
+const winText = document.getElementById("winText");
 
 userInput.addEventListener("keydown", function (event) {
   if (event.key == "Enter") {
@@ -19,7 +20,16 @@ function send() {
   })
     .then((response) => response.json())
     .then((data) => {
-      userWord.textContent = "Введенное пользователем слово: " + word;
+      if (data.win == true) {
+        winText.textContent = "Вы отгадали слово!";
+      }
+
+      userWord = document.createElement("li");
+      userWord.textContent =
+        "Слово: " + word + " | Косинусное сходство: " + data.cos_sim;
+
+      userWords.appendChild(userWord);
+
       userInput.value = "";
       userInput.focus();
     })
