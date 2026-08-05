@@ -5,28 +5,31 @@ import logging
 from flask import Flask, render_template, request, jsonify, session
 from flask_session import Session
 from sentence_transformers import SentenceTransformer, util
+from config import Config as cfg
 
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
-                    level=logging.INFO, handlers=[logging.StreamHandler(), logging.FileHandler("logs/app.log", encoding="utf-8")])
+os.makedirs(cfg.LOGS_DIR, exist_ok=True)
+logging.basicConfig(format=cfg.LOG_FORMAT, datefmt=cfg.LOG_DATE_FORMAT,
+                    level=logging.INFO, handlers=[logging.StreamHandler(), logging.FileHandler(cfg.LOG_FILE, encoding="utf-8")])
 
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-app.config["SESSION_TYPE"] = 'filesystem'
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_USE_SIGNER"] = True
+app.config["SESSION_TYPE"] = cfg.SESSION_TYPE
+app.config["SESSION_FILE_DIR"] = cfg.SESSION_FILE_DIR
+app.config["SESSION_PERMANENT"] = cfg.SESSION_PERMANENT
+app.config["SESSION_USE_SIGNER"] = cfg.SESSION_USE_SIGNER
 Session(app)
 
-model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2", cache_folder="./cache")
+model = SentenceTransformer(cfg.MODEL_NAME, cache_folder=cfg.MODEL_CACHE_FOLDER)
 
 
-with open("math_words.txt", "r", encoding="utf-8") as math_words:
+with open(cfg.MATH_WORDS_FILE, "r", encoding="utf-8") as math_words:
     MATH_WORDS = sorted([word.strip().lower() for word in math_words if word.strip()])
     
 if not MATH_WORDS:
     error_message = "Файл math_words.txt пуст, либо отсутствует."
-    logging.error(error_message)
+    logger.error(error_message)
     raise RuntimeError(error_message)
 
 MATH_WORDS_SET = set(MATH_WORDS)
@@ -62,27 +65,27 @@ def guess():
     user_word = request.get_json().get("word").strip().lower() if request.get_json() else None
     
     if "secret_word" not in session:
-        logging.error("Секретное слово не назначено, игра не началась. Ошибка отправлена на front-end.")
+        logger.error("Секретное слово не назначено, игра не началась. Ошибка отправлена на front-end.")
         return jsonify({"error": "Игра не начата."})
     if user_word is None:
-        logging.warning("Не удалось получить JSON с front-end. Ошибка отправлена на front-end.")
+        logger.warning("Не удалось получить JSON с front-end. Ошибка отправлена на front-end.")
         return jsonify({"error": "JSON не передался."})
-    if len(user_word) > 100:
-        logging.warning("От пользователя пришло слишком длинное слово. Ошибка отправлена на front-end.")
+    if len(user_word) > cfg.MAX_USER_WORD_LENGTH:
+        logger.warning("От пользователя пришло слишком длинное слово. Ошибка отправлена на front-end.")
         return jsonify({"error": "Слишком длинное слово."})
     
     session["user_word"] = user_word
     
     if session["user_word"] == "":
-        logging.warning("От пользователя отправилась пустая строка, а не слово. Отправлено косинусное сходство = 0.0")
+        logger.warning("От пользователя отправилась пустая строка, а не слово. Отправлено косинусное сходство = 0.0")
         return jsonify({"cos_sim": 0.0, "win": False})
     
-    cos_sim = round(get_cos_sim(session["secret_word"], session["user_word"])[0, 0].item(), 6)
+    cos_sim = round(get_cos_sim(session["secret_word"], session["user_word"])[0, 0].item(), cfg.COS_SIM_ROUND)
     
     logger.info(f"Secret Word: {session['secret_word']}, User Word: {session['user_word']}, Cosine Similarity: {cos_sim}")
     
-    if session["secret_word"] == session["user_word"] or cos_sim > 0.9999:
-        logging.info(f"Пользователь отгадал слово. Было загадано: {session["secret_word"]}")
+    if session["secret_word"] == session["user_word"] or cos_sim > cfg.COS_SIM_THRESHOLD_WIN:
+        logger.info(f"Пользователь отгадал слово. Было загадано: {session['secret_word']}")
         return jsonify({"cos_sim": cos_sim, "win": True})
     
     return jsonify({"cos_sim": cos_sim, "win": False})
@@ -90,10 +93,10 @@ def guess():
 
 @app.route("/")
 def index():
-    logging.info("Сессия запущена.")
+    logger.info("Сессия запущена.")
     session["secret_word"] = get_random_word()
     return render_template("index.html")
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=cfg.DEBUG, port=cfg.PORT)
