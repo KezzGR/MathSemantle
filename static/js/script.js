@@ -13,6 +13,11 @@ sendButton.addEventListener("click", send);
 function send() {
   const word = userInput.value;
 
+  if (!word.trim()) {
+    alert("Введите слово");
+    return;
+  }
+
   fetch("/guess", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -20,11 +25,17 @@ function send() {
   })
     .then((response) => response.json())
     .then((data) => {
+      if (data.error) {
+        console.error(data.error);
+        alert(data.error);
+        return;
+      }
+
       if (data.win == true) {
         winText.textContent = "Вы отгадали слово!";
       }
 
-      userWord = document.createElement("li");
+      const userWord = document.createElement("li");
       userWord.textContent =
         "Слово: " + word + " | Косинусное сходство: " + data.cos_sim;
 
